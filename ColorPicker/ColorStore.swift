@@ -99,6 +99,16 @@ final class ColorStore: ObservableObject {
         persist()
     }
 
+    /// Launches the system color picker (NSColorSampler) and adds the selected color to history
+    func pickColor() {
+        NSColorSampler().show { [weak self] color in
+            guard let self = self, let color = color else { return }
+            Task { @MainActor in
+                self.add(color)
+            }
+        }
+    }
+
     // MARK: - Persistence
 
     /// Loads history from UserDefaults

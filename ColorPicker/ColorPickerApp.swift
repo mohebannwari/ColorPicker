@@ -6,27 +6,41 @@
 //
 
 import SwiftUI
-import SwiftData
+import AppKit
 
 @main
 struct ColorPickerApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @StateObject private var store = ColorStore()
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        MenuBarExtra("Tint", systemImage: "eyedropper") {
+            VStack(alignment: .leading, spacing: 8) {
+                Button("Pick Color…") {
+                    pickColor()
+                }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
+
+                Divider()
+
+                Button("Quit Tint") {
+                    NSApplication.shared.terminate(nil)
+                }
+                .keyboardShortcut("q", modifiers: [.command])
+            }
+            .padding()
+            .environmentObject(store)
         }
-        .modelContainer(sharedModelContainer)
+        .menuBarExtraStyle(.window)
+    }
+
+    private func pickColor() {
+        NSColorSampler().show { color in
+            guard let selectedColor = color else { return }
+
+            // ColorStore handles sRGB conversion, hex conversion, persistence, and clipboard
+            Task { @MainActor in
+                store.add(selectedColor)
+            }
+        }
     }
 }

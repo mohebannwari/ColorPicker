@@ -8,6 +8,14 @@
 import SwiftUI
 import AppKit
 
+/// Main app entry point for Tint - a macOS 26+ color picker utility
+///
+/// ARCHITECTURE NOTES:
+/// - Uses MenuBarExtra with .window style for Liquid Glass panel (Milestone 1-2)
+/// - ColorStore manages history with 8-hour retention (Milestone 3)
+/// - Global hotkey ⌘⇧C via Carbon API (Milestone 6)
+/// - Menu commands provide fallback shortcuts (Milestone 7)
+/// - Liquid Glass polish with accessibility support (Milestone 9)
 @main
 struct ColorPickerApp: App {
     @StateObject private var store = ColorStore()
@@ -22,11 +30,11 @@ struct ColorPickerApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("Tint", systemImage: "eyedropper") {
+        MenuBarExtra("Tint", systemImage: "paintbrush.fill") {
             PanelView()
                 .environmentObject(store)
                 .onAppear {
-                    // Register global hotkey ⌥⌘T when the menu bar extra appears
+                    // Register global hotkey ⇧⌘C when the menu bar extra appears
                     // This ensures the store is fully initialized
                     Task { @MainActor in
                         hotKeyService.register {
@@ -36,5 +44,16 @@ struct ColorPickerApp: App {
                 }
         }
         .menuBarExtraStyle(.window)
+        .commands {
+            // Command menu for picking colors
+            // This provides a fallback if the global Carbon hotkey fails
+            // or is disabled in system permissions
+            CommandMenu("Actions") {
+                Button("Pick Color…") {
+                    store.pickColor()
+                }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
+            }
+        }
     }
 }

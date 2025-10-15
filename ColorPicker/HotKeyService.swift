@@ -36,9 +36,9 @@ final class HotKeyService {
 
     // MARK: - Configuration
 
-    /// Default hotkey configuration: ⇧⌘T (Shift+Command+T)
+    /// Default hotkey configuration: ⇧⌘C (Shift+Command+C)
     private struct HotKeyConfig {
-        static let keyCode: UInt32 = UInt32(kVK_ANSI_T)
+        static let keyCode: UInt32 = UInt32(kVK_ANSI_C)
         static let modifiers: UInt32 = UInt32(cmdKey | shiftKey)
 
         // Unique identifier for our hotkey
@@ -107,10 +107,10 @@ final class HotKeyService {
         )
 
         if status != noErr {
-            print("Warning: Failed to register global hotkey ⇧⌘T (status: \(status))")
+            print("Warning: Failed to register global hotkey ⇧⌘C (status: \(status))")
             print("The hotkey may conflict with another application or system shortcut.")
         } else {
-            print("Global hotkey ⇧⌘T registered successfully")
+            print("Global hotkey ⇧⌘C registered successfully")
         }
     }
 

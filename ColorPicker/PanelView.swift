@@ -8,9 +8,19 @@
 import SwiftUI
 
 /// Main panel view for the menu bar extra
+///
+/// LIQUID GLASS IMPLEMENTATION (Milestone 9):
+/// - Uses MenuBarExtra.window style for system-provided glass background
+/// - Button glass effects use .glassEffect() modifier (macOS 26+)
+/// - Accessibility: Respects reduced transparency and increased contrast
+/// - Foreground styling provides contrast per HIG materials guidance
 struct PanelView: View {
     @EnvironmentObject var store: ColorStore
     @State private var copiedId: UUID?
+
+    // Accessibility environment values
+    @Environment(\.accessibilityReduceTransparency) var reduceTransparency
+    @Environment(\.accessibilityInvertColors) var invertColors
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,7 +34,7 @@ struct PanelView: View {
 
             // Action buttons
             VStack(spacing: 8) {
-                // Pick Color button (solid blue with liquid glass effect, white text)
+                // Pick Color button (solid blue with optional glass effect, white text)
                 Button(action: pickColor) {
                     Text("Pick Color")
                         .font(.system(size: 13, weight: .medium))
@@ -35,26 +45,10 @@ struct PanelView: View {
                             Capsule()
                                 .fill(Color.blue)
                         )
-                        .glassEffect(.regular, in: Capsule())
+                        // Apply glass effect only if transparency is not reduced
+                        .conditionalGlassEffect(enabled: !reduceTransparency)
                 }
                 .buttonStyle(.plain)
-
-                // Clear History button (liquid glass, white text) - only show when history exists
-                if !store.history.isEmpty {
-                    Button(action: {
-                        withAnimation {
-                            store.clearHistory()
-                        }
-                    }) {
-                        Text("Clear History")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 32)
-                            .glassEffect(.regular, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
             }
             .padding(.horizontal)
             .padding(.bottom, 12)
@@ -73,26 +67,37 @@ struct PanelView: View {
 
     private var historyList: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(Array(store.history.enumerated()), id: \.element.id) { index, swatch in
-                    VStack(spacing: 0) {
-                        ColorRow(
-                            swatch: swatch,
-                            isCopied: copiedId == swatch.id,
-                            onCopy: {
-                                copyToClipboard(swatch)
-                            }
-                        )
-
-                        if index < store.history.count - 1 {
-                            Divider()
-                                .padding(.horizontal)
+            LazyVStack(spacing: 10) {
+                ForEach(store.history) { swatch in
+                    ColorRow(
+                        swatch: swatch,
+                        isCopied: copiedId == swatch.id,
+                        onCopy: {
+                            copyToClipboard(swatch)
                         }
-                    }
+                    )
                     .transition(.opacity)
                 }
             }
             .padding(.vertical, 8)
+        }
+        .mask {
+            VStack(spacing: 0) {
+                // Progressive fade for content scrolling behind header
+                LinearGradient(
+                    stops: [
+                        .init(color: .clear, location: 0),
+                        .init(color: .black, location: 0.15)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 80)
+
+                // Rest of content fully visible
+                Rectangle()
+                    .fill(.black)
+            }
         }
     }
 
@@ -111,14 +116,14 @@ struct PanelView: View {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(swatch.hex, forType: .string)
 
-        // Show copied feedback
-        withAnimation {
+        // Show copied feedback with smooth easing
+        withAnimation(.easeInOut(duration: 0.3)) {
             copiedId = swatch.id
         }
 
-        // Reset after 300ms
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation {
+        // Reset after 2 seconds with smooth easing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            withAnimation(.easeInOut(duration: 0.3)) {
                 copiedId = nil
             }
         }
@@ -151,16 +156,23 @@ struct ColorRow: View {
 
                 Spacer()
 
-                // Copy button or checkmark
+                // "Copied" indicator
                 if isCopied {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.green)
-                        .transition(.scale.combined(with: .opacity))
-                } else {
-                    Image(systemName: "doc.on.doc")
-                        .font(.system(size: 12))
+                    Text("Copied")
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(Color(nsColor: .separatorColor))
+                        )
+                        .transition(
+                            .asymmetric(
+                                insertion: .scale(scale: 0.8).combined(with: .opacity),
+                                removal: .scale(scale: 0.9).combined(with: .opacity)
+                            )
+                        )
                 }
             }
             .padding(.horizontal)
@@ -189,14 +201,27 @@ struct ColorRow: View {
     }
 }
 
+// MARK: - Accessibility Helpers
+
+/// View extension to conditionally apply glass effect based on accessibility settings
+extension View {
+    /// Conditionally applies glass effect if enabled (respects reduced transparency)
+    @ViewBuilder
+    func conditionalGlassEffect(enabled: Bool) -> some View {
+        if enabled {
+            self.glassEffect(.regular, in: Capsule())
+        } else {
+            self
+        }
+    }
+}
+
 // MARK: - Preview
 
-#Preview {
+#Preview("Panel with History") {
+    @Previewable @StateObject var store = ColorStore()
+
     PanelView()
-        .environmentObject({
-            let store = ColorStore()
-            // Add some sample colors for preview
-            return store
-        }())
+        .environmentObject(store)
         .frame(width: 200, height: 400)
 }

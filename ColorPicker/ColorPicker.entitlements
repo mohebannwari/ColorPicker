@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Enable App Sandbox for security -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	
+	<!-- Allow access to user-selected files (for potential file operations) -->
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+	
+	<!-- Allow network access if needed for future features -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	
+	<!-- Allow printing if needed for color swatches -->
+	<key>com.apple.security.print</key>
+	<true/>
+	
+	<!-- Allow temporary exceptions for debugging and development -->
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
+	<array>
+		<string>/</string>
+	</array>
+	
+	<!-- Allow temporary exception for debugging -->
+	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
+	<array>
+		<string>com.apple.coreservices.launchservicesd</string>
+	</array>
+</dict>
+</plist>
